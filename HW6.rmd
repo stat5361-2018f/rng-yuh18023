@@ -1,1 +1,161 @@
-HW6
+---
+title: "Random Sampling"
+author:
+  - Yuance He
+date: "10/19/2018"
+documentclass: article
+papersize: letter
+fontsize: 11pt
+
+output: pdf_document
+---
+
+# 5.2.1
+## 1.
+
+\begin{align}
+\int_0^{\infty}g(x)dx
+&=\int_0^{\infty}(2x^{\theta - 1} + x^{\theta-1/2}) e^{- x} dx\\
+&=2\int_0^{\infty}x^{\theta - 1} e^{- x} dx + \int_0^{\infty}x^{\theta-1/2} e^{-x} dx\\
+&=2\Gamma(\theta) + \Gamma(\theta + 1/2)
+\end{align}
+
+Since, $C=\frac{1}{\int_0^{\infty}g(x)dx}$, then $C=\frac{1}{2\Gamma(\theta) + \Gamma(\theta + 1/2)}$.
+
+Plug C into g(x), we have:
+$$g(x) = \frac{1}{2\Gamma(\theta) + \Gamma(\theta + 1/2)}(2x^{\theta - 1} + x^{\theta-1/2}) e^{- x}$$
+$$g(x) = \frac {2 \Gamma(\theta)}{2\Gamma(\theta) + \Gamma(\theta + 1/2)} \frac{2x^{\theta - 1} e^{- x}}{\Gamma(\theta)} +\frac {\Gamma(\theta + 1/2)}{2\Gamma(\theta) + \Gamma(\theta + 1/2)}\frac{x^{\theta-1/2} e^{- x}}{\Gamma(\theta + 1/2)}$$
+Thus, g(x) is a mixture of Gamma($\theta$,1) and Gamma($\theta+0.5$,1). Their weight are $\frac {2 \Gamma(\theta)}{2\Gamma(\theta) + \Gamma(\theta + 1/2)}$ and $\frac {\Gamma(\theta + 1/2)}{2\Gamma(\theta) + \Gamma(\theta + 1/2)}$ respectively.
+
+## 2.
+
+Let w and 1-w be the weight of these two component Gamma distribution respectively. After randomly generating 10000 numbers from U(0,1), if U<w, sample X~Gamma($\theta$,1), otherwise sample X~Gamma($\theta+0.5$,1).
+```{r}
+theta <- 2
+w <- 2*gamma(theta) / (2*gamma(theta) + gamma(theta + 0.5))
+U <- runif(10000,min = 0,max = 1)
+sample <- rep(0,10000)
+for(i in 1:10000){
+  if(U[i] < w){
+    sample[i] <- rgamma(1,theta,1)
+  }
+  else{
+    sample[i] <- rgamma(1,theta + 0.5,1)
+  }
+}
+plot(density(sample), main = " Estimated Density",ylim = c(0,.4),lwd = 2)
+x <- seq(0,20,0.05)
+lines(x,w*dgamma(x,theta, 1) + (1-w) * dgamma(x,theta + 0.5, 1),col = "red",lwd = 2)
+legend("topleft", c("True","Estimated"), col = c("red","black"),cex = 1,lwd = 1)
+```
+
+## 3.
+
+First we know f(x) is proportional to $q(x) = \sqrt{x + 4} x^{\theta-1} e^{-x}$, and g(x) is the “instrumental” density, $g(x) = \frac{1}{2\Gamma(\theta) + \Gamma(\theta + 1/2)}(2x^{\theta - 1} + x^{\theta-1/2}) e^{- x}$. Then all we need to determine $\alpha$, $\alpha=sup\frac{q(x)}{g(x)}$. After calculating the maximum of the ratio, we have $\alpha = \frac{\sqrt2*(2\Gamma(\theta) + \Gamma(\theta + 1/2))}{2}$. Finally we will use the same method as above by comparing U and $\frac{q(x)}{\alpha g(x)}$.
+
+```{r}
+theta <- 2
+w <- 2*gamma(theta) / (2*gamma(theta) + gamma(theta + 0.5))
+C <- 1 / (2 * gamma(theta) + gamma(theta + 0.5))
+alpha <- sqrt(2) /(2*C)
+sample <- rep(0,10000)
+for (i in 1:10000) {
+  U1 <- runif(1,0,1)
+  if(U1 < w){
+    X <- rgamma(1,theta,1)
+  }
+  else{
+    X <- rgamma(1,theta + 0.5,1)
+  }
+  U2 <- runif(1,0,1)
+  g <- C * (2 * X ^ (theta - 1) + X ^ (theta - 0.5)) * exp(-1 * X)
+  q <- sqrt(4 + X) * X^(theta - 1) * exp(-1 * X)
+  r <- q/(alpha*g)
+  if(U2<=r){
+    sample[i] <- X
+    i <- i+1
+  }
+}
+plot(density(sample), main = " Estimated Density")
+
+```
+
+
+# 5.2.2
+## 1.
+
+As we all know, density of Beta distribution is 
+$$\frac{X^(\alpha-1)}{B(\alpha,\beta)}(1-X)^(\beta-1)$$
+Now we are given that f(x) is proportional to 
+$$q(x) = \frac{x^{\theta - 1}}{1 + x^{2}} + \sqrt{2 + x^{2}} (1 - x)^{\beta - 1}$$
+q(x) contains two key components of Beta distribution, so I will set
+$$g(x)=w*Be(\theta,1)+(1-w)*Be(1,\beta)$$
+Since $q(x) \leq x^{\theta - 1} + 2 (1 - x)^{\beta - 1}$, then $g(x)=C(x^{\theta - 1} + 2 (1 - x)^{\beta - 1})$. Now we need to calculte C.
+\begin{align*}
+\int_0^1 (x^{\theta - 1} + 2 (1 - x)^{\beta - 1})dx
+&=\int_0^1 x^{\theta - 1}dx + \int_0^1 2 (1 - x)^{\beta - 1}dx\\
+&=B(\theta,1) + 2B(1,\beta)
+\end{align*}
+Thus, we have $C=\frac{1}{B(\theta,1) + 2B(1,\beta)}$.
+\begin{align*}
+g(x)&=C(x^{\theta - 1} + 2 (1 - x)^{\beta - 1})\\
+&=\frac{1}{B(\theta,1) + 2B(1,\beta)}(x^{\theta - 1} + 2(1 - x)^{\beta - 1})\\
+&=\frac{B(\theta,1)}{B(\theta,1) + 2B(1,\beta)}\frac{x^{\theta - 1}}{B(\theta,1)} + \frac{2B(1,\beta)}{B(\theta,1) + 2B(1,\beta)}\frac{ (1 - x)^{\beta - 1}}{B(1,\beta)}
+\end{align*}
+
+Hence, $w=\frac{B(\theta,1)}{B(\theta,1) + 2B(1,\beta)}$.
+
+```{r}
+rng_f <- function(theta,beta){
+  U <- runif(10000,0,1)
+  w <- beta(theta,1)/(beta(theta,1) + 2*beta(1,beta))
+  sample <- rep(0,10000)
+  for (i in 1:10000) {
+    if(U[i]<w){sample[i] <- rbeta(1,theta,1)}
+    else{sample[i] <- rbeta(1,1,beta)}
+  }
+  return(sample)
+}
+s_f <- rng_f(2,3) #We assume theta=2, beta=3
+plot(density(s_f),main = "Estimated Density")
+```
+
+
+## 2.
+
+Now, we have f(x) is proportional to [q1(x)+q2(x)], where $q1(x)=\frac{x^{\theta-1}}{1+x^2}$ and $q2(x) = \sqrt{2+x^2}(1-x)^{\beta-1}$.
+As how we derive g(x) above, similarly, we can easily get:
+$$g1(x)=Be(\theta, 1),  \alpha1=B(\theta, 1)$$
+$$g2(x)=Be(1, \beta),  \alpha2=2B(1, \beta)$$
+```{r}
+samplef <- rep(0,10000)
+theta <- 2
+beta <- 3
+alpha_1 <- beta(theta,1)
+alpha_2 <- 2*beta(1,beta)
+w <- alpha_1 / (alpha_1 + alpha_2)
+i <- 1
+while(i <= 10000){
+  U <- runif(1)
+  if(U < w){
+    X <- rbeta(1,theta,1)
+    U1 <- runif(1)
+    q <- X^(theta-1) / (1 + X^2)
+    g <- X^(theta-1) / beta(theta,1)
+    r <- q / (alpha_1 * g)
+  }
+  else{
+    X <- rbeta(1,1,beta)
+    U2 <- runif(1)
+    q <- sqrt(2 + X^2)*(1 - X)^(beta - 1)
+    g <- (1 - X)^(beta - 1) / beta(1, beta)
+    r <- q / (alpha_2 * g)
+  }
+  if ( U > r ) { next }
+  samplef[i] <- X
+  i <- i+1 
+}
+plot(density(samplef), main = "Estimated Density")
+```
+
+
