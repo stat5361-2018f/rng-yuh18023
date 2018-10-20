@@ -156,6 +156,7 @@ while(i <= 10000){
   i <- i+1 
 }
 plot(density(samplef), main = "Estimated Density")
+curve(x^(theta-1)/(1+x^2)+sqrt(2+x^2)*(1-x)^(beta-1)/0.706, from=0, to=1, add=TRUE, col="red")
 ```
 
 
